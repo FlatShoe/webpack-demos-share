@@ -1024,3 +1024,38 @@ module.exports = {
   ]
 }
 ```
+## Mode
+[mode](https://webpack.js.org/configuration/mode/)配置选项可以告知webpack相应地使用其内置的优化
+
+默认情况下使用的是production模式
+
+可配置的模式有: 'none' | 'development' | 'production'
+
+
+| 选项 | 描述 |
+| --- | --- |
+| development | 设置 `DefinePlugin`中`process.env.NODE_ENV` 为 `development`，为模块和chunks启用有效名称 |
+| production | 设置 `DefinePlugin`中`process.env.NODE_ENV` 为 `production`，为模块和chunks启用确定性的混淆名称，`FlagDependencyUsagePlugin`，`FlagIncludedChunksPlugin`，`ModuleConcatenationPlugin`，`NoEmitOnErrorsPlugin` 和 `TerserPlugin`
+| none | 选择退出任何默认优化选项
+
+webpack配置文件
+```
+const {resolve} = require('path')
+
+module.exports = {
+    // 配置模式
+  mode: 'development', // 开发模式
+  // mode: 'production', // 默认打包模式为生产模式
+  // mode: 'none',
+  entry: './src/index.js',
+  output: {
+    filename: 'bundle.js',
+    path: resolve(__dirname, 'build')
+  }
+}
+```
+同时也支持通过命令行指定打包模式
+
+```
+webpack --mode=development
+```
