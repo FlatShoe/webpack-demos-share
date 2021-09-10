@@ -8,8 +8,9 @@ import './font/font.css'
 import './style/index.css'
 
 const createSpan = (className) => {
-  const el = document.createElement('span')
+  const el = document.createElement('p')
   el.classList.add(className)
+  el.innerText = 'hello webpack'
   return el
 }
 
