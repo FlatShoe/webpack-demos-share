@@ -1,2 +1,2 @@
-import '../src/style/index.css'
-import '../src/style/common.less'
+import './style/index.css'
+import './style/common.less'
