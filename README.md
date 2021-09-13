@@ -433,7 +433,7 @@ file-loader 会将文件上的import/require()解析为url，并将该文件发�
 // src/index.js
 
 const img = new Image()
-img.src = require('./images/1.png)
+img.src = require('./images/1.png).default
 document.body.appendChildren(img)
 ```
 webpack配置文件中进行配置
@@ -1024,6 +1024,7 @@ module.exports = {
   ]
 }
 ```
+
 ## Mode
 [mode](https://webpack.js.org/configuration/mode/)配置选项可以告知webpack相应地使用其内置的优化
 
@@ -1059,3 +1060,127 @@ module.exports = {
 ```
 webpack --mode=development
 ```
+
+## Source Map
+日常开发中，源码与webpack压缩构建后的代码是不一样的，比如说生产环境中编写源代码报错时与编译后对应的第几行肯定不一致的，此时就非常不方便调试
+
+Source Map在MDN文档中解释是使得浏览器来重构原始源并在调试器呈现重构原始
+
+借用阮一峰老师的解释就是：Source map就是一个信息文件，里面储存着位置信息。也就是说，转换后的代码的每一个位置，所对应的转换前的位置。有了它，出错的时候，除错工具将直接显示原始代码，而不是转换后的代码。这无疑给开发者带来了很大方便
+
+
+Webpack中,通过devtool控制是否以及如何生成Source Map
+
+[devtool](https://webpack.js.org/configuration/devtool/#devtool)有很多值供我们使用，不同的值生成的Source Map也是不一样的，同时构建速度也会因为选择不同的值产生不一样的影响
+
+### Production
+生产环境下，devtool是缺省的，不生成Source Map
+
+### Development
+开发环境下，devtool的默认值为eval，不生成Source Map
+
+另外，如果我们将devtool的值设置为false，也是不会生成Source Map的
+
+### eval
+
+eval模式，是将一行行代码转成字符串，传入eval函数中，并且会在末尾追加注释`//# sourceURL`
+
+```
+ // src/index.js
+     // 打印一个不存在的变量
+ console.log(abc)
+```
+
+```
+ // webpack.config.js
+ 
+const {resolve} = require('path')
+const HtmlWebpackPlugin = require('html-webpack-plugin')
+const {CleanWebpackPlugin} = require('clean-webpack-plugin')
+module.exports = {
+    // 开发模式  devtool默认值为eval
+  mode: 'development',
+  entry: './src/index.js',
+  output: {
+    filename: 'bundle.js',
+    path: resolve(__dirname, 'build')
+  },
+  plugins: [
+    new HtmlWebpackPlugin(),
+    new CleanWebpackPlugin()
+  ]
+}
+```
+
+![image.png](https://p6-juejin.byteimg.com/tos-cn-i-k3u1fbpfcp/e807640961e849c4a54d3671f4557e4b~tplv-k3u1fbpfcp-watermark.image)
+
+
+虽然eval没有生成Source Map，但是eval执行代码后面追加的注释，还原了对应的文件
+
+
+![image.png](https://p3-juejin.byteimg.com/tos-cn-i-k3u1fbpfcp/4762894f7f3c4a2291a461b645bf0ea5~tplv-k3u1fbpfcp-watermark.image?)
+
+
+
+### source-map
+
+当devtoop值为source-map时，会生成一个独立的Source Map文件
+
+
+![image.png](https://p1-juejin.byteimg.com/tos-cn-i-k3u1fbpfcp/01d147e74e9a4b50b27b979da6edad85~tplv-k3u1fbpfcp-watermark.image?)
+
+bundle.js构建文件末尾处会追加一行注释`//# sourceMappingURL=bundle.js.map`，指向该Source Map文件
+
+```
+  // webpack.congif.js
+  
+module.exports = {
+  mode: 'development',
+    // 设置为source-map
+  devtool: 'source-map'
+  ...省略
+}  
+```
+浏览器会根据这个注释找到source-map文件
+
+![image.png](https://p3-juejin.byteimg.com/tos-cn-i-k3u1fbpfcp/6d36e097e1ba40f9be61df808a12860c~tplv-k3u1fbpfcp-watermark.image?)
+
+### eval-source-map
+
+当devtoop值为eval-source-map时 ，source map以DataUrl添加到eval函数的后面
+
+![image.png](https://p6-juejin.byteimg.com/tos-cn-i-k3u1fbpfcp/c3a2f1d8335840af871da300fd02e0c1~tplv-k3u1fbpfcp-watermark.image?)
+
+### inline-source-map
+当devtoop的值为inline-source-map时，source map转换为 DataUrl 后添加到 bundle 中
+
+![image.png](https://p1-juejin.byteimg.com/tos-cn-i-k3u1fbpfcp/6513dd4909914dd2b52ac774fd315a70~tplv-k3u1fbpfcp-watermark.image?)
+
+
+对于不同的值生成的Source Map存在的差异可以查看官方[示例](https://github.com/webpack/webpack/tree/master/examples/source-map)，这里不一一演示
+
+
+### 推荐
+在官方提供这么多devtoop的值当中，一些适用于开发环境，一些适用于生产环境，对于开发而言，通常需要快速的Source Maps
+
+开发环境：推荐使用source-map 或者 cheap-module-source-map
+
+生产环境：缺省devtool选项、source-map，hidden-source-map，nosources-source-map
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
