@@ -1168,6 +1168,332 @@ module.exports = {
 生产环境：缺省devtool选项、source-map，hidden-source-map，nosources-source-map
 
 
+## Babel
+开发中，通常会使用ES5+的高级语法或是使用TypeScript以及编写jsx,这些都是离不开Babel的转换，[Babel](https://www.babeljs.cn/)是一个工具链，主要用于将采用 ECMAScript 2015+ 语法编写的代码转换为向后兼容的 JavaScript 语法，以便能够运行在当前和旧版本的浏览器或其他环境中
+
+主要的功能包括：语法转换、源码转换、通过 Polyfill 方式在目标环境中添加缺失的特性等
+
+### 使用
+通过命令行单独使用babel，需要下载的依赖
+
+```
+yarn add @babel/core @babel/cli @babel/preset-env -D
+```
+
+```
+  // src/test.js
+const sum = (a, b) => a + b
+console.log(sum(1, 1))
+```
+命令行执行命令将 `src` 目录下的所有代码编译到 `lib` 目录
+
+```
+./node_modules/.bin/babel src --out-dir lib --presets=@babel/preset-env
+
+#或
+
+npx babel src --out-dir lib --presets=@babel/preset-env
+```
+
+```
+ // lib/test.js
+"use strict";
+
+var sum = function sum(a, b) {
+  return a + b;
+};
+
+console.log(sum(1, 1));
+```
+此时我们已经将 ES2015+ 语法进行转换
+
+在我们下载的依赖中，Babel 的核心功能包含在 [@babel/core](https://www.babeljs.cn/docs/babel-core) 模块中，[@babel/cli](https://www.babeljs.cn/docs/babel-cli) 是一个能够从终端（命令行）使用的工具，[@babel/preset-env](https://www.babeljs.cn/docs/babel-preset-env)是Babel的一个智能预设
+
+### babel-loader
+此前我们通过了命令行使用了babel, [babel-loader](https://webpack.docschina.org/loaders/babel-loader/)是允许使用babel和webpack转译`JavaScript`文件
+
+```
+yarn add babel-loader -D
+```
+
+```
+  // src/index.js
+  
+console.log([1, 2, 3, 4].map(n => n * 2))
+```
+
+```
+ // webpack-config.js
+const {resolve} = require('path')
+
+module.exports = {
+  entry: './src/index.js',
+  output: {
+    filename: 'bundle.js',
+    path: resolve(__dirname, 'build')
+  },
+  module: {
+    rules: [
+      {
+        test: /\.m?js$/,
+        use: {
+          // 使用babel-loader
+          loader: 'babel-loader',
+          options: {
+            // 传入babel预设
+            presets: ['@babel/preset-env']
+          }
+        }
+      }
+    ]
+  }
+}
+```
+
+```
+ // build/bundle.js
+ 
+console.log([1,2,3,4].map((function(n){return 2*n}))); 
+```
+通过babel-loader，我们也将 ES2015+ 语法进行了转换
+
+默认情况下`@babel/preset-env`使用.browserslist作为配置源，前面postcss中，我们也有提到[.browserslist](https://juejin.cn/post/6985782073109774349#heading-16)
+
+若不通过.browserslist作为配置源，也可以通过`targets`设置目标浏览器
+
+```
+const {resolve} = require('path')
+
+module.exports = {
+  entry: './src/index.js',
+  output: {
+    filename: 'bundle.js',
+    path: resolve(__dirname, 'build')
+  },
+  module: {
+    rules: [
+      {
+        test: /\.m?js$/,
+        use: {
+          // 使用babel-loader
+          loader: 'babel-loader',
+          options: {
+            // 传入babel预设
+            // presets: ['@babel/preset-env']
+            
+            presets: [
+              [
+                '@babel/preset-env',
+                {
+                  // 设置targets
+                  targets: [
+                    "chrome 58",
+                    "ie 11"
+                  ]
+                }
+              ]
+            ]
+          }
+        }
+      }
+    ]
+  }
+}
+```
+
+### 配置文件
+babel的配置文件类型，可以看下官方的 [Configuration File Types](https://www.babeljs.cn/docs/config-files#configuration-file-types)，这里以`js`或者`json`为后缀的`babel.config`作为示例
+
+根目录下创建babel.config.js或babel.config.json，其中之一即可
+
+```
+  // babel.config.js
+ module.exports = {
+  presets: [
+    [
+      '@babel/preset-env',
+      {
+        targets: [
+          "chrome 58",
+          "ie 11"
+        ]
+      }
+    ]
+  ]
+}
+```
+
+```
+ // babel.config.json
+ {
+  "presets": [
+    [
+      "@babel/preset-env",
+      {
+        "targets": [
+          "chrome 88",
+          "ie 11"
+        ]
+      }
+    ]
+  ]
+}
+```
+此时我们就不需要在webpack配置文件中配置预设了
+```
+ // webpack.config.js
+ module.exports = {
+  entry: './src/index.js',
+  output: {
+    filename: 'bundle.js',
+    path: resolve(__dirname, 'build')
+  },
+  module: {
+    rules: [
+      {
+        test: /\.m?js$/,
+        use: {
+          // 使用babel-loader
+          loader: 'babel-loader',
+        }
+      }
+    ]
+  }
+}
+```
+
+### babel-polyfill、core-js 和 regenerator-runtime
+Babel默认只转换新的JavaScript句法（syntax），而不转换新的API，比如 Iterator、Generator、Set、Maps、Proxy、Reflect、Symbol、Promise等全局对象，在Babel 7.4.0之前，使用[@babel/polyfill](https://babeljs.io/docs/en/babel-polyfill)进行转换，从Babel 7.4.0开始，这个包已经被弃用，取而代之的是直接包含core-js/stable(用来填充ECMAScript特性)和regenerator-runtime/runtime(需要使用transpiled generator函数)来完成polyfill的使用
+
+
+```
+yarn add core-js regenerator-runtime
+```
+
+#### 设置useBuiltIns
+在根目录的babel.config.js文件中，我们配置一下useBuiltIns
+
+
+useBuiltIns属性
+- usage: polyfill局部使用，不造成全局污染
+
+- entry: 通过`require` 或 `import` 引入 core-js 和 regenerator-runtime，多次引入会报错，比如我们依赖的某一个库本身使用了某些polyfill的特性，会根据 browserslist 目标浏览器导入所有的polyfill，对应的打包文件也会变大
+
+- false: 默认值，不使用polyfill
+
+
+```
+ // src/index.js
+ 
+```
+#### corejs
+[corejs](https://www.npmjs.com/package/core-js): JavaScript 的模块化标准库。包括[ECMAScript 到 2021 年的 polyfills](https://github.com/zloirock/core-js#ecmascript)：[promises](https://github.com/zloirock/core-js#ecmascript-promise)、[symbols](https://github.com/zloirock/core-js#ecmascript-symbol)、[collections](https://github.com/zloirock/core-js#ecmascript-collections)、iterators、[typed arrays](https://github.com/zloirock/core-js#ecmascript-typed-arrays)、许多其他特性、[ECMAScript 提案](https://github.com/zloirock/core-js#ecmascript-proposals)、[一些跨平台的 WHATWG/W3C 特性和提案](https://www.npmjs.com/package/core-js#web-standards)
+
+排除不需要使用polyfill的文件，例如node_modules
+
+```
+const {resolve} = require('path')
+
+module.exports = {
+  entry: './src/index.js',
+  output: {
+    filename: 'bundle.js',
+    path: resolve(__dirname, 'build')
+  },
+  module: {
+    rules: [
+      {
+        test: /\.m?js$/,
+         // 排除 node_modules
+        exclude: /node_modules/,
+        use: {
+          // 使用babel-loader
+          loader: 'babel-loader'
+        }
+      }
+    ]
+  }
+}
+```
+
+通过不同的配置对下面带吗进行转换
+
+```
+ // src/index.js
+new Promise((resolve,reject) => {})
+```
+`usage`
+```
+ // babel.config.js
+module.exports = {
+  presets: [
+    [
+      '@babel/preset-env',
+      {
+         // 设置useBuiltIns 为 usage
+        useBuiltIns: 'usage',
+         // 设置corejs 版本
+        corejs: 3.8
+      }
+    ]
+  ]
+}
+```
+
+![image.png](https://p3-juejin.byteimg.com/tos-cn-i-k3u1fbpfcp/f9a9c2893c4a4393978319783ff701fd~tplv-k3u1fbpfcp-watermark.image?)
+
+打包后的bundel.js,我粗略数了一下，大概有。。。我也不知道有多少行代码
+
+`entry`
+
+入库文件中引入`core-js/stable` 和 `regenerator-runtime/runtime`
+
+```
+ // src/index.js
+ 
+ // 引入 core-js/stable 和 regenerator-runtime/runtime
+ import 'core-js/stable'
+ import 'regenerator-runtime/runtime'
+
+new Promise((resolve,reject) => {})
+```
+
+```
+ // babel.config.js
+module.exports = {
+  presets: [
+    [
+      '@babel/preset-env',
+      {
+        // 设置useBuiltIns 为 usage
+        // useBuiltIns: 'usage',
+
+        // 设置useBuiltIns 为 entry
+        useBuiltIns: 'entry',
+        // 设置corejs 版本
+        corejs: 3.17
+      }
+    ]
+  ]
+}
+```
+打包后的bundel.js文件很明显是usage打包的要大很多
+
+![image.png](https://p6-juejin.byteimg.com/tos-cn-i-k3u1fbpfcp/8335c16d8a63405db4b6bd2edcaa1933~tplv-k3u1fbpfcp-watermark.image?)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
