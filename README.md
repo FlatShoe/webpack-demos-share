@@ -1416,7 +1416,7 @@ module.exports = {
 }
 ```
 
-通过不同的配置对下面带吗进行转换
+通过不同的配置对下面代码进行转换
 
 ```
  // src/index.js
@@ -1446,7 +1446,7 @@ module.exports = {
 
 `entry`
 
-入库文件中引入`core-js/stable` 和 `regenerator-runtime/runtime`
+入口文件中引入`core-js/stable` 和 `regenerator-runtime/runtime`
 
 ```
  // src/index.js
@@ -1481,32 +1481,106 @@ module.exports = {
 
 ![image.png](https://p6-juejin.byteimg.com/tos-cn-i-k3u1fbpfcp/8335c16d8a63405db4b6bd2edcaa1933~tplv-k3u1fbpfcp-watermark.image?)
 
+### babel/preset-react
+
+通过babel转换jsx
 
 
+```
+yarn add @babel/preset-react -D
+```
+webpack配置文件
+```
+ // webpack.config.js
+const {resolve} = require('path')
 
+const  {CleanWebpackPlugin} = require('clean-webpack-plugin')
+const HtmlWebpackPlugin = require('html-webpack-plugin') 
 
+module.exports = {
+  entry: './src/index.jsx',
+  output: {
+    filename: 'bundle.js',
+    path: resolve(__dirname, 'build')
+  },
+  module: {
+    rules: [
+      {
+        test: /\.jsx?$/,
+        exclude: /node_modules/,
+        use: {
+          loader: 'babel-loader',
+        }
+      }
+    ]
+  },
+  plugins: [
+    new CleanWebpackPlugin(),
+    new HtmlWebpackPlugin({
+      title: 'hello react',
+      template: './index.html'
+    })
+  ]
+}
+```
 
+入口jsx文件
+```
+ // src/index.jsx
+import React, {Component} from 'react'
+import ReactDom from 'react-dom'
 
+class App extends Component {
+  constructor (props) {
+    super(props)
+    this.state = {
+      message: 'hello react'
+    }
+  }
+  render () {
+    return (
+      <div>
+        <h1>{this.state.message}</h1>
+      </div>
+    )
+  }
+}
 
+ReactDom.render(<App />, document.querySelector('#app'))
+```
+index.html模版文件
 
+```
+ <!-- index.html -->
+ 
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Document</title>
+</head>
+<body>
+  <div id="app"></div>
+</body>
+</html>
+```
+babel配置文件
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+```
+ // babel.config.js
+module.exports = {
+  presets: [
+    [
+      '@babel/preset-env',
+      {
+        useBuiltIns: 'entry',
+        corejs: 3.17
+      }
+    ],
+    // 设置 @babel/preset-react
+    ['@babel/preset-react']
+  ]
+}
+```
