@@ -1584,3 +1584,45 @@ module.exports = {
   ]
 }
 ```
+
+## 编译TypeScript
+将Typescript转换成Javascript可以通过ts-loader或者babel-loader
+### ts-loader
+ts-loader是通过TypeScript的compiler来转换成JavaScript
+
+下载依赖
+```
+yarn add typescript ts-loader -D
+```
+生成tsconfig.json文件
+```
+tsc --init
+```
+配置信息
+
+```
+module: {
+    rules: [
+      {
+        test: /\.ts$/,
+        exclude: /node_modules/,
+        use: 'ts-loader'
+      }
+    ]
+  }
+```
+### babel-loader
+```
+yarn add @babel/preset-typescript -D
+```
+使用此预设，babel可以将Typescript转换成Javascript
+
+```
+    // babel.config.js
+module.exports = {
+  presets: [
+    // ...
+    ['@babel/preset-typescript']
+  ]
+}
+```
