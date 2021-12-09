@@ -1626,3 +1626,58 @@ module.exports = {
   ]
 }
 ```
+
+## Eslint使用
+安装ESLint
+
+```
+yarn add eslit -D
+```
+生成配置文件
+
+```
+npx eslint --init
+```
+当前我生成的是airbnb风格的elsint
+详细配置可以根据需求查阅
+[官网](https://eslint.org/)
+
+```
+    // .eslintrc.js
+    
+module.exports = {
+  env: {
+    browser: true,
+    es2021: true,
+  },
+  extends: [
+    'airbnb-base',
+  ],
+  parserOptions: {
+    ecmaVersion: 13,
+  },
+  rules: {
+  },
+};
+```
+EslintWebpackPlugin该插件使用来查找和修复 JavaScript 代码中的问题
+
+```
+yarn add eslint-webpack-plugin -D
+```
+配置信息
+```
+const {resolve} = require('path')
+const ESLintPlugin = require('eslint-webpack-plugin')
+
+module.exports = {
+  entry: './src/index.js',
+  output: {
+    filename: 'bundle.js',
+    path: resolve(__dirname, 'build')
+  },
+  plugins: [
+    new ESLintPlugin()
+  ]
+}
+```
