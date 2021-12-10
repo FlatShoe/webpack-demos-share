@@ -1871,3 +1871,57 @@ module.exports = {
 }
 ```
 更多关于proxy的配置可以查阅[官网](https://webpack.docschina.org/configuration/dev-server/#devserverproxy)
+
+## resolve
+配置模块如何解析
+
+### alias
+创建 `import` 或 `require` 的别名，来确保模块引入变得更简单。例如，一些位于 `src/` 文件夹下的常用模块
+
+
+```
+    // webpack.config.js
+
+module.exports = {
+    // ...
+  resolve: {
+    alias: {
+      '@': resolve(__dirname, 'src')
+    }
+  }
+}
+```
+当模块层级比较深的时候，使用该方式非常方便
+```
+    // src/index.js
+
+// import {sum} from './util.js'
+import {sum} from '@/util.js'
+
+console.log(sum(1, 1))
+```
+
+### extensions
+能够在引入模块时不带扩展，并按顺序解析这些后缀名。如果有多个文件有相同的名字，但后缀名不同，webpack 会解析列在数组首位的后缀的文件 并跳过其余的后缀
+
+```
+    // webpack.config.js
+
+module.exports = {
+    // ...
+  resolve: {
+    alias: {
+      '@': resolve(__dirname, 'src')
+    },
+    extensions: ['.js', '.vue', '.json']
+  }
+}
+```
+```
+    // src/index.js
+
+// import {sum} from './util.js'
+import {sum} from '@/util'
+
+console.log(sum(1, 1))
+```
