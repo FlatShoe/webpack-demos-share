@@ -1681,3 +1681,193 @@ module.exports = {
   ]
 }
 ```
+
+##  DevServer
+`webpack-dev-server`可以理解为一个小型的静态文件服务器，为webpack打包生成的资源文件提供Web服务
+
+```
+yarn add webpack-dev-server -D
+```
+定义package.json脚本执行 `webpack serve`
+
+```
+{
+  "name": "serve",
+  "version": "1.0.0",
+  "main": "index.js",
+  "license": "MIT",
+  "scripts": {
+    "build": "webpack",
+    "serve": "webpack serve"
+  }
+}
+```
+模式改为 `development`，使用 `HtmlWebpackPlugin` 并提供模版进行创建html文件
+```
+    // webpack.config.js
+    
+const {resolve} = require('path')
+const HtmlWebpackPlugin = require('html-webpack-plugin')
+const {CleanWebpackPlugin} = require('clean-webpack-plugin')
+
+module.exports = {
+  mode: 'development',
+  entry: './src/index.js',
+  output: {
+    filename: 'bundle.js',
+    path: resolve(__dirname, 'build')
+  },
+  plugins: [
+    new HtmlWebpackPlugin({
+      template: './public/index.html'
+    }),
+    new CleanWebpackPlugin()
+  ]
+}
+```
+在入口文件中书写一段代码
+
+```
+    // src/index.js
+    
+class Persion {
+  constructor(name) {
+    this.name = name
+  }
+  sayHi() {
+    console.log(`Hello My Name is ${this.name}`)
+  }
+}
+const James = new Persion('James')
+James.sayHi()
+```
+命令行中使用 `yarn serve` 执行脚本，并在终端通过webpack-dev-server提示的地址，访问浏览器
+
+![image.png](https://p9-juejin.byteimg.com/tos-cn-i-k3u1fbpfcp/cde4f0669f434ffe93333774bc0291fe~tplv-k3u1fbpfcp-watermark.image?)
+
+![image.png](https://p9-juejin.byteimg.com/tos-cn-i-k3u1fbpfcp/dc4261e72aa2467bbac44a5175ec8a8f~tplv-k3u1fbpfcp-watermark.image?)
+
+我们可以看到浏览器中输出了我们想要的内容，并且我们修改代码内容时，进行保存，浏览器也会随即刷新
+
+### HMR
+模块热替换(hot module replacement 或 HMR)是 webpack 提供的最有用的功能之一。它允许在运行时更新所有类型的模块，而无需完全刷新。
+
+配置devServer 开启HMR
+```
+const {resolve} = require('path')
+const HtmlWebpackPlugin = require('html-webpack-plugin')
+const {CleanWebpackPlugin} = require('clean-webpack-plugin')
+
+module.exports = {
+  mode: 'development',
+  entry: './src/index.js',
+  // 配置devServer
+  devServer: {
+    // 开启热更新
+    hot: true
+  },
+  output: {
+    filename: 'bundle.js',
+    path: resolve(__dirname, 'build')
+  },
+  plugins: [
+    new HtmlWebpackPlugin({
+      template: './public/index.html'
+    }),
+    new CleanWebpackPlugin()
+  ]
+}
+```
+指定哪些模块使用HMR，当指定的模块发生了更新，其余未更新的模块的状态则会保留，提高开发效率
+```
+import './test'
+class Persion {
+  constructor(name) {
+    this.name = name
+  }
+  sayHi() {
+    console.log(`Hello My Name is ${this.name}`)
+  }
+}
+const James = new Persion('James')
+James.sayHi()
+// 判断是否开启了热更新
+if (module.hot) {
+    // 指定模块
+  module.hot.accept('./test.js', () => {
+    console.log('test模块更新了')  
+  })
+}
+```
+现实开发中，模块文件比较多，我们不可能一个一个模块进行指定。可以参考[官网](https://webpack.docschina.org/guides/hot-module-replacement/#other-code-and-frameworks)，HMR与各个框架的交互，例如，vue-loader支持 vue 组件的 HMR，提供开箱即用体验
+
+### host
+指定要使用的主机地址
+
+默认值是localhost
+
+如果你想让你的服务器可以被外部访问，像这样指定
+
+```
+module.exports = {
+  //...
+  devServer: {
+    host: '0.0.0.0'
+  }
+}
+```
+### port
+指定监听请求的端口号：
+
+```
+module.exports = {
+  //...
+  devServer: {
+    port: 9527
+  }
+}
+```
+
+### gzip压缩
+```
+module.exports = {
+  //...
+  devServer: {
+    compress: true
+  }
+}
+```
+
+原本294kb 压缩至70.9kb
+![image.png](https://p6-juejin.byteimg.com/tos-cn-i-k3u1fbpfcp/edc902085127410c8a3436cfc4e5a2e9~tplv-k3u1fbpfcp-watermark.image?)
+
+
+### proxy
+当拥有单独的 API 后端开发服务器并且希望在同一域上发送 API 请求时，代理某些 URL 可能会很有用
+
+```
+module.exports = {
+  //...
+  devServer: {
+    proxy: {
+      '/api': 'http://localhost:3000'
+    }
+  }
+}
+```
+现在，对 `/api/users` 的请求会将请求代理到 `http://localhost:3000/api/users`。
+如果不希望传递`/api`，则需要重写路径：
+```
+module.exports = {
+  //...
+  devServer: {
+    proxy: {
+      '/api': {
+        target: 'http://localhost:3000',
+        pathRewrite: { '^/api': '' }
+      }
+    }
+  }
+}
+```
+更多关于proxy的配置可以查阅[官网](https://webpack.docschina.org/configuration/dev-server/#devserverproxy)
