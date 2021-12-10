@@ -1925,3 +1925,89 @@ import {sum} from '@/util'
 
 console.log(sum(1, 1))
 ```
+
+## 配置文件抽离
+当前我们都是通过一个webpack.config.js文件进行配置，当配置信息越来越多的时候，这个配置文件将难以维护，我们应该根据当前的环境进行划分配置，例如可以对开发环境和生产环境进行不同的配置划分，并且有些配置生产环境不需要使用，有些配置开发环境不需要使用，有些配置开发环境和生产环境都会使用到，我们需要做一个公共的抽离却又能单独针对当前环境的配置划分
+
+### 创建配置文件
+项目根目录下创建一个config文件夹
+
+该文件夹下创建三个配置文件
+- `webpack.base.conf` —— 开发环境与生产环境的公共基础配置
+- `webpack.dev.conf` —— 开发环境配置
+- `webpack.prod.conf` —— 生产环境配置
+
+![image.png](https://p6-juejin.byteimg.com/tos-cn-i-k3u1fbpfcp/3785930014c84a3ca686721ea3606bb2~tplv-k3u1fbpfcp-watermark.image?)
+
+package.json中配置执行脚本
+
+`build` -- 项目打包
+
+`serve` -- 通过devserve 启动本地服务
+
+```
+{
+  "scripts": {
+    "build": "webpack --config config/webpack.prod.conf",
+    "serve": "webpack serve --config config/webpack.dev.conf"
+  }
+}
+```
+### webpack-merget
+通过webpack-merge 将公共基础配置与当前环境划分的配置进行合并
+
+
+```
+yarn add webpack-merge -D
+```
+
+公共基础配置
+```
+/*
+* @Description base
+*/
+const {join} = require('path')
+
+const resolve = (dir) => {
+  return join(__dirname, '..', dir)
+}
+
+module.exports = (env) => {
+  return {
+    entry: './src/index.js',
+    output: {
+      filename: 'bundle.js',
+      path: resolve('build')
+    }
+    // ...
+  }
+}
+```
+开发环境
+```
+/*
+* @Description dev
+*/
+
+const {merge} = require('webpack-merge')
+const baseConfig = require('./webpack.base.conf')
+
+module.exports = merge(baseConfig, {
+  mode: 'development',
+  //...
+})
+```
+生产环境
+```
+/*
+* @Description prod
+*/
+
+const {merge} = require('webpack-merge')
+const baseConfig = require('./webpack.base.conf')
+
+module.exports = merge(baseConfig, {
+  mode: 'production',
+  //...
+})
+```
