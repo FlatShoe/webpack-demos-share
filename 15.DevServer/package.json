@@ -1,0 +1,10 @@
+{
+  "name": "15-demo",
+  "version": "1.0.0",
+  "main": "index.js",
+  "license": "MIT",
+  "scripts": {
+    "build": "webpack",
+    "serve": "webpack serve"
+  }
+}
