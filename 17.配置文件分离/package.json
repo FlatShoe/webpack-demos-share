@@ -1,0 +1,10 @@
+{
+  "name": "17-demo",
+  "version": "1.0.0",
+  "main": "index.js",
+  "license": "MIT",
+  "scripts": {
+    "build": "webpack --config config/webpack.prod.conf",
+    "serve": "webpack serve --config config/webpack.dev.conf"
+  }
+}
