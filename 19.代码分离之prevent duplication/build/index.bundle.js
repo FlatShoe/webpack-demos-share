@@ -1,0 +1,1 @@
+"use strict";(self.webpackChunk_19_demo=self.webpackChunk_19_demo||[]).push([[826],{138:(e,o,s)=>{var n=s(784),d=s.n(n);console.log(d().join(["index","loaded!"]))}},e=>{e(e.s=138)}]);
