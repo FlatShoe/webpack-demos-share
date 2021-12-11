@@ -2056,7 +2056,7 @@ console.log(_.join(['index', 'loaded!']))
 ```
 
 ```
- // src/index.js
+ // src/main.js
 
 import _ from 'lodash'
 console.log(_.join(['main', 'loaded!']))
