@@ -2042,7 +2042,9 @@ module.exports = {
 ```
 
 ### 防止重复
-在刚刚entry入口手动分离两个模块的代码中，若这两个模块都使用了共同的第三方模块，配置 [`dependOn` option](https://webpack.docschina.org/configuration/entry-context/#dependencies) 选项，这样可以在多个 chunk 之间共享模块
+
+#### [Entry dependencies](https://webpack.docschina.org/configuration/entry-context/#dependencies)
+配置 [`dependOn` option](https://webpack.docschina.org/configuration/entry-context/#dependencies) 选项，这样可以在多个 chunk 之间共享模块
 
 这里以lodash作为示例
 
@@ -2078,3 +2080,38 @@ module.exports = {
   }
 }
 ```
+#### SplitChunksPlugin
+[`SplitChunksPlugin`](https://webpack.docschina.org/plugins/split-chunks-plugin) 插件可以将公共的依赖模块提取到已有的入口 chunk 中，或者提取到一个新生成的 chunk。使用这个插件，也可以将重复的 `lodash` 模块去除，该插件webpack已经默认安装和集成，并不需要单独安装
+
+splitChunks.chunks属性有三个值
+- async —— 异步导入的模块
+- initial —— 非异步导入的模块
+- all —— 包含异步和非异步导入的模块
+
+```
+// webpack.config.js
+
+const {resolve} = require('path')
+
+module.exports = {
+  mode: 'production',
+  entry: {
+    // index: {import: './src/index.js', dependOn: 'shared'},
+    // main: {import: './src/main.js', dependOn: 'shared'},
+    // shared: ['lodash']
+    index: './src/index.js',
+    main: './src/main.js'
+  },
+  output: {
+    filename: '[name].bundle.js',
+    path: resolve(__dirname, 'build')
+  },
+  optimization: {
+    splitChunks: {
+      chunks: 'all'
+    }
+  }
+}
+```
+
+关于splitChunks更多的配置属性可以查阅[官网](https://webpack.docschina.org/plugins/split-chunks-plugin/)
