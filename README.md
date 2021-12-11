@@ -2011,3 +2011,32 @@ module.exports = merge(baseConfig, {
   //...
 })
 ```
+
+## 代码分离
+代码分离是 webpack 中最引人注目的特性之一。此特性能够把代码分离到不同的 bundle 中，然后可以按需加载或并行加载这些文件。代码分离可以用于获取更小的 bundle，以及控制资源加载优先级，如果使用合理，会极大影响加载时间。
+
+-   **入口起点**：使用 [`entry`](https://webpack.docschina.org/configuration/entry-context) 配置手动地分离代码。
+-   **防止重复**：使用 [Entry dependencies](https://webpack.docschina.org/configuration/entry-context/#dependencies) 或者 [`SplitChunksPlugin`](https://webpack.docschina.org/plugins/split-chunks-plugin) 去重和分离 chunk。
+-   **动态导入**：通过模块的内联函数调用来分离代码。
+
+### 入口起点(entry point)
+通过entry入口手动分离
+
+```
+    // webpack.config.js
+
+const {resolve} = require('path')
+
+module.exports = {
+  mode: 'production',
+  entry: {
+    index: './src/index.js',
+    main: './src/main.js'
+  },
+  output: {
+      // name 中的值便是entry对象中的 index 和 main
+    filename: '[name].bundle.js',
+    path: resolve(__dirname, 'build')
+  }
+}
+```
