@@ -2040,3 +2040,41 @@ module.exports = {
   }
 }
 ```
+
+### 防止重复
+在刚刚entry入口手动分离两个模块的代码中，若这两个模块都使用了共同的第三方模块，配置 [`dependOn` option](https://webpack.docschina.org/configuration/entry-context/#dependencies) 选项，这样可以在多个 chunk 之间共享模块
+
+这里以lodash作为示例
+
+```
+ // src/index.js
+ 
+import _ from 'lodash'
+console.log(_.join(['index', 'loaded!']))
+```
+
+```
+ // src/index.js
+
+import _ from 'lodash'
+console.log(_.join(['main', 'loaded!']))
+```
+
+```
+ // webpack.config.js
+
+const {resolve} = require('path')
+
+module.exports = {
+  mode: 'production',
+  entry: {
+    index: {import: './src/index.js', dependOn: 'shared'},
+    main: {import: './src/main.js', dependOn: 'shared'},
+    shared: ['lodash']
+  },
+  output: {
+    filename: '[name].bundle.js',
+    path: resolve(__dirname, 'build')
+  }
+}
+```
