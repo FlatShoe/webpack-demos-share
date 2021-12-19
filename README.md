@@ -2115,3 +2115,43 @@ module.exports = {
 ```
 
 关于splitChunks更多的配置属性可以查阅[官网](https://webpack.docschina.org/plugins/split-chunks-plugin/)
+
+
+### 动态导入
+当涉及到动态代码拆分时，webpack 提供了两个类似的技术。第一种，也是推荐选择的方式是，使用符合 [ECMAScript 提案](https://github.com/tc39/proposal-dynamic-import) 的 [`import()` 语法](https://webpack.docschina.org/api/module-methods/#import-1) 来实现动态导入。第二种，则是 webpack 的遗留功能，使用 webpack 特定的 [`require.ensure`](https://webpack.docschina.org/api/module-methods/#requireensure)，这里我们使用第一种作为示例
+
+EsModule 的方式导出一个函数
+
+```
+  // src/util.js
+ 
+ export const test = () => {
+  console.log('test')
+}
+```
+通过`import()`进行导入
+
+由于 import() 会返回一个 promise，通过.then的方式我们拿到了util.js导出的函数，它也可以和 [`async` 函数](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Statements/async_function)一起使用
+
+```
+    // src/index.js
+import('./util').then(res => {
+  console.log(res)
+})
+```
+```
+    // webpack.config.js
+const {resolve} = require('path')
+
+module.exports = {
+  mode: 'production',
+  entry: './src/index.js',
+  output: {
+    filename: '[name].bundle.js',
+    path: resolve(__dirname, 'build')
+  }
+}
+```
+现在我们已经通过 dynamic import(动态导入) 来分离出一个 chunk
+
+![image.png](https://p9-juejin.byteimg.com/tos-cn-i-k3u1fbpfcp/ec860c87b22143708ab85eaf54b49b34~tplv-k3u1fbpfcp-watermark.image?)
