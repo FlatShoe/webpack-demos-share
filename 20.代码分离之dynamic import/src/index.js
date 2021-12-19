@@ -1,4 +1,4 @@
 // 通过`import()`进行导入
-import('./util').then(res => {
+import(/* webpackChunkName: 'test' */ './util').then(res => {
   console.log(res)
 })

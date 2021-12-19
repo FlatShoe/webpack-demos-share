@@ -1,1 +1,0 @@
-"use strict";(self.webpackChunk_20_demo=self.webpackChunk_20_demo||[]).push([[891],{891:(e,s,t)=>{t.r(s),t.d(s,{test:()=>o});const o=()=>{console.log("test")}}}]);
