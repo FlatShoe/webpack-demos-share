@@ -2155,3 +2155,83 @@ module.exports = {
 现在我们已经通过 dynamic import(动态导入) 来分离出一个 chunk
 
 ![image.png](https://p9-juejin.byteimg.com/tos-cn-i-k3u1fbpfcp/ec860c87b22143708ab85eaf54b49b34~tplv-k3u1fbpfcp-watermark.image?)
+
+#### 预获取/预加载模块(prefetch/preload module)
+通过import()动态导入某些模块时，我们需要执行了imprt()，该分离出来的的chunk才会被浏览器下载解析
+
+给body添加一个点击事件，当点击了body的时候才会动态导入 test 模块
+
+```
+ // src/index.js
+document.body.addEventListener('click', () => {
+ import('./test').then(({default: _default}) => {
+    _default()
+  })
+})
+```
+
+```
+// src/test.js
+export default () => {
+  console.log('test')
+}
+```
+首次加载
+
+
+![image.png](https://p1-juejin.byteimg.com/tos-cn-i-k3u1fbpfcp/6e7228d91c4142dcaf20eed5091a873b~tplv-k3u1fbpfcp-watermark.image?)
+点击body之后
+
+
+![image.png](https://p6-juejin.byteimg.com/tos-cn-i-k3u1fbpfcp/94a212a8ae104140a9f63b5acef748fa~tplv-k3u1fbpfcp-watermark.image?)
+
+假设该模块并不是很重要，chunk体积又很大，浏览器下载解析的时候，必然会带来一定的性能问题
+
+Webpack v4.6.0+ 增加了对预获取和预加载的支持。
+
+在声明 import 时，使用下面这些内置指令，可以让 webpack 输出 "resource hint(资源提示)"，来告知浏览器：
+
+**prefetch**(预获取)：将来某些导航下可能需要的资源
+
+**preload**(预加载)：当前导航下可能需要资源
+
+- 通过魔法注释使用prefetch进行预获取
+
+`/* webpackPrefetch: true */`
+
+```
+    // src/index.js
+document.body.addEventListener('click', () => {
+  import(/* webpackPrefetch: true */'./test').then(({default: _default}) => {
+    _default()
+  })
+})
+```
+![image.png](https://p6-juejin.byteimg.com/tos-cn-i-k3u1fbpfcp/d7731ab2e08c4b76a5fed6ea6c7f1745~tplv-k3u1fbpfcp-watermark.image?)
+
+可以看到浏览器已经对chunk进行了预获取，当再次点击body的时候，又再次出现了一个js，只不过这次是浏览器对之前预获取的js文件做解析而已
+
+![image.png](https://p6-juejin.byteimg.com/tos-cn-i-k3u1fbpfcp/f961fe23fe274fb39fcd58ce0a9845d9~tplv-k3u1fbpfcp-watermark.image?)
+
+- 通过魔法注释使用preload进行预加载
+
+`/* webpackPreload: true */`
+
+```
+    // src/index.js
+document.body.addEventListener('click', () => {
+  import(/* webpackPreload: true */'./test').then(({default: _default}) => {
+    _default()
+  })
+})
+```
+预加载的效果无法通过浏览器演示
+
+总结
+
+与 prefetch 指令相比，preload 指令有许多不同之处：
+
+-   preload chunk 会在父 chunk 加载时，以并行方式开始加载。prefetch chunk 会在父 chunk 加载结束后开始加载。
+-   preload chunk 具有中等优先级，并立即下载。prefetch chunk 在浏览器闲置时下载。
+-   preload chunk 会在父 chunk 中立即请求，用于当下时刻。prefetch chunk 会用于未来的某个时刻。
+-   浏览器支持程度不同。
