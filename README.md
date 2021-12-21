@@ -2235,3 +2235,106 @@ document.body.addEventListener('click', () => {
 -   preload chunk 具有中等优先级，并立即下载。prefetch chunk 在浏览器闲置时下载。
 -   preload chunk 会在父 chunk 中立即请求，用于当下时刻。prefetch chunk 会用于未来的某个时刻。
 -   浏览器支持程度不同。
+
+
+
+## Terser
+一个用于 ES6+ 的 JavaScript 解析器和 mangler/compressor 工具包
+Terser可以帮助我们压缩代码，使bundle更加小
+
+```
+yarn add terser
+```
+
+### 命令行使用
+
+Terser 是一款单独的插件，我们可以通过命令行进行使用
+
+
+```
+// src/index.js
+
+class Animal {
+  constructor(name, age) {
+    this.name = name
+    this.age = age
+  }
+}
+
+const dog = new Animal('Fish Ball', 2)
+console.log(dog)
+```
+
+```
+npx terser ./src/index.js -o tersermini.js
+```
+可以看到根目录上输出了一个tersermini.js文件
+
+更多配置可以查阅[官方文档](https://www.npmjs.com/package/terser)
+
+### terser-webpack-plugin
+webpack中，可以使用TerserPlugin，该插件使用terser来压缩 JavaScript
+
+webpack v5 开箱即带有最新版本的 `terser-webpack-plugin`。如果你使用的是 webpack v5 或更高版本，同时希望自定义配置，那么仍需要安装 `terser-webpack-plugin`。如果使用 webpack v4，则必须安装 `terser-webpack-plugin` v4 的版本。
+
+
+```
+yarn add terser-webpack-plugin -D
+```
+
+```
+    // webpack.config.js
+const {resolve} = require('path')
+const TerserPlugin = require('terser-webpack-plugin')
+
+module.exports = {
+  mode: 'production',
+  entry: './src/index.js',
+  output: {
+    filename: 'bundle.js',
+    path: resolve(__dirname, 'build')
+  },
+  optimization: {
+    minimize: true,
+    minimizer: [
+      new TerserPlugin(
+        {
+          terserOptions: {
+            compress: {
+              arrows: false,
+              collapse_vars: false,
+              comparisons: false,
+              computed_props: false,
+              hoist_funs: false,
+              hoist_props: false,
+              hoist_vars: false,
+              inline: false,
+              loops: false,
+              negate_iife: false,
+              properties: false,
+              reduce_funcs: false,
+              reduce_vars: false,
+              switches: false,
+              toplevel: false,
+              typeofs: false,
+              booleans: true,
+              if_return: true,
+              sequences: true,
+              unused: true,
+              conditionals: true,
+              dead_code: true,
+              evaluate: true
+            },
+            mangle: {
+              safari10: true
+            }
+          },
+          parallel: true,
+          extractComments: false
+        }
+      )
+    ]
+  }
+}    
+```
+详细配置可以查阅[官方文档](https://webpack.docschina.org/plugins/terser-webpack-plugin/#root)
