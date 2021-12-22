@@ -2338,3 +2338,181 @@ module.exports = {
 }    
 ```
 详细配置可以查阅[官方文档](https://webpack.docschina.org/plugins/terser-webpack-plugin/#root)
+
+
+## Tree Shaking
+tree shaking 是一个术语，通常用于描述移除 JavaScript 上下文中的未引用代码(dead-code)。它依赖于 ES2015 模块语法的 [静态结构](http://exploringjs.com/es6/ch_modules.html#static-module-structure) 特性，例如 [`import`](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Statements/import) 和 [`export`](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Statements/export)。这个术语和概念实际上是由 ES2015 模块打包工具 [rollup](https://github.com/rollup/rollup) 普及起来的
+
+
+webpack实现Tree Shaking采用了两种不同的方案
+- usedExports
+- sideEffects:跳过整个模块/文件，直接查看该文件是否有副作用
+
+### usedExports
+`usedExports` 通过标记某些函数是否被使用，之后通过Terser来进行优化的
+
+src下添加一个主入口index.js和一个math.js模块
+
+math模块中导出两个函数
+```
+    // src/math.js
+export function sum(n1, n2) {
+  return n1 + n2
+}
+
+export function square(x) {
+  return x * x
+}
+```
+index主入口文件我们引入math模块的其中一个方法
+
+```
+    // src/index.js
+import {sum} from './math'
+console.log(sum(1, 2))
+```
+webpack.config.js中，需要将 `mode` 配置设置成development，以确定 bundle 不会被压缩，从而达到最直观的效果
+```
+    // webpack.config.js
+const {resolve} = require('path')
+const {CleanWebpackPlugin} = require('clean-webpack-plugin')
+
+module.exports = {
+  mode: 'development',
+  devtool: 'source-map',
+  entry: './src/index.js',
+  output: {
+    filename: 'bundle.js',
+    path: resolve(__dirname, 'build')
+  },
+  plugins: [
+    new CleanWebpackPlugin()
+  ]
+}
+```
+打包后，我们可以发现在bundle.js中看到了两个方法都包含在内，而我们却从来没有引用过square方法
+![image.png](https://p9-juejin.byteimg.com/tos-cn-i-k3u1fbpfcp/4b605a016dde459ea04cc75d95cb8efa~tplv-k3u1fbpfcp-watermark.image?)
+
+usedExports在production模式下默认为true，现在我们在development模式下手动设置usedExports为true
+
+```
+    // webpack.config.js
+module.exports = {
+  mode: 'development',
+  devtool: 'source-map',
+  entry: './src/index.js',
+  output: {
+    filename: 'bundle.js',
+    path: resolve(__dirname, 'build')
+  },
+  optimization: {
+    usedExports: true
+  },
+  plugins: [
+    new CleanWebpackPlugin()
+  ]
+}
+```
+
+![image.png](https://p6-juejin.byteimg.com/tos-cn-i-k3u1fbpfcp/14b14ca617e04391903ba88b0376e06a~tplv-k3u1fbpfcp-watermark.image?)
+
+可以看到在usedExports设置为true时，会有一段注释:unused harmony export xxx，这段注释的意义是什么呢?告知Terser在优化时，可以删除掉这段代码
+
+`usedExports`实现`Tree Shaking`是结合`Terser`来完成的，下面我们将`optimization.minimize`设置为true(production模式下默认为true)，删除未引用代码(dead code)
+
+```
+    // webpack.config.js
+const {resolve} = require('path')
+const {CleanWebpackPlugin} = require('clean-webpack-plugin')
+const TerserPlugin = require('terser-webpack-plugin')
+
+module.exports = {
+  mode: 'development',
+  devtool: 'source-map',
+  entry: './src/index.js',
+  output: {
+    filename: 'bundle.js',
+    path: resolve(__dirname, 'build')
+  },
+  optimization: {
+    usedExports: true,
+    minimize: true
+  },
+  plugins: [
+    new CleanWebpackPlugin()
+  ]
+}    
+```
+
+### sideEffects
+`sideEffects`， 向 webpack compiler 提供提示，表明项目中的哪些文件是 "pure(纯正 ES2015 模块)"，由此可以安全地删除文件中未使用的部分
+
+在主入口文件中，我们单纯的引入一个test模块，但并没有作任何使用
+```
+    // src/index.js
+import test from './test'
+```
+可以看到打包后的bundle.js中，对test模块进行了引入，即使我们没有做任何使用
+![image.png](https://p9-juejin.byteimg.com/tos-cn-i-k3u1fbpfcp/379a1c25634f47f69535763c942f9584~tplv-k3u1fbpfcp-watermark.image?)
+
+如果所有代码都不包含副作用，我们可以通过 `package.json` 的 `"sideEffects"`，简单地将它的属性值标记为`false`，来告知 webpack 它可以安全地删除未用到的 export
+
+```
+{
+  "name": "demo",
+  "sideEffects": false
+}
+```
+
+`side effect(副作用)` 的定义是，在导入时会执行特殊行为的代码，而不是仅仅暴露一个 export 或多个 export，而是类似于有全局对象的属性赋值。
+
+举例说明，下面这种模块就是具有副作用的
+```
+export default {
+  name: 'test'
+}
+window._name = 'test'
+```
+如果你的代码确实有一些副作用，可以将`sideEffects`的值提供为一个数组
+
+```
+{
+  "name": "demo",
+  "sideEffects": ["./src/test.js"]
+}
+```
+此数组支持简单的 glob 模式匹配相关文件。其内部使用了 [glob-to-regexp](https://github.com/fitzgen/glob-to-regexp)（支持：`*`，`**`，`{a,b}`，`[a-z]`）。如果匹配模式为 `*.css`，且不包含 `/`，将被视为 `**/*.css`。
+
+\
+所有导入文件都会受到 tree shaking 的影响。这意味着，如果在项目中使用类似 `css-loader` 并 import 一个 CSS 文件，则需要将其添加到 side effect 列表中，以免在生产模式中无意中将它删除
+```
+{
+  "name": "demo",
+  "sideEffects": ["./src/test.js", "*.css"]
+}
+```
+或者通过[`module.rules` 配置选项](https://webpack.docschina.org/configuration/module/#module-rules) 中设置 `"sideEffects"`
+
+```
+export default {
+ // ...
+ module: {
+   rules: [
+     {
+       test: /\.css$/i,
+       use: [
+        'style-loader',
+        'css-loader'
+       ],
+       sideEffects: true
+     }  
+   ]  
+ }
+}
+```
+### 总结
+[`sideEffects`](https://webpack.docschina.org/configuration/optimization/#optimizationsideeffects) 和 [`usedExports`](https://webpack.docschina.org/configuration/optimization/#optimizationusedexports)（更多被认为是 tree shaking）是两种不同的优化方式
+
+**`usedExports`** 依赖于 [terser](https://github.com/terser-js/terser) 去检测语句中的副作用。它是一个 JavaScript 任务而且没有像 `sideEffects` 一样简单直接。而且它不能跳转子树/依赖由于细则中说副作用需要被评估
+
+**`sideEffects` 更为有效** 是因为它允许跳过整个模块/文件和整个文件子树
