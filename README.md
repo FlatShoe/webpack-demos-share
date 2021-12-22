@@ -2346,7 +2346,7 @@ tree shaking 是一个术语，通常用于描述移除 JavaScript 上下文中
 
 webpack实现Tree Shaking采用了两种不同的方案
 - usedExports
-- sideEffects:跳过整个模块/文件，直接查看该文件是否有副作用
+- sideEffects
 
 ### usedExports
 `usedExports` 通过标记某些函数是否被使用，之后通过Terser来进行优化的
@@ -2513,6 +2513,246 @@ export default {
 ### 总结
 [`sideEffects`](https://webpack.docschina.org/configuration/optimization/#optimizationsideeffects) 和 [`usedExports`](https://webpack.docschina.org/configuration/optimization/#optimizationusedexports)（更多被认为是 tree shaking）是两种不同的优化方式
 
-**`usedExports`** 依赖于 [terser](https://github.com/terser-js/terser) 去检测语句中的副作用。它是一个 JavaScript 任务而且没有像 `sideEffects` 一样简单直接。而且它不能跳转子树/依赖由于细则中说副作用需要被评估
+`usedExports` 依赖于 [terser](https://github.com/terser-js/terser) 去检测语句中的副作用。它是一个 JavaScript 任务而且没有像 sideEffects 一样简单直接。而且它不能跳转子树/依赖由于细则中说副作用需要被评估
 
-**`sideEffects` 更为有效** 是因为它允许跳过整个模块/文件和整个文件子树
+`sideEffects` 更为有效 是因为它允许跳过整个模块/文件和整个文件子树
+
+## 关于处理css的一些插件
+再开头前几章，我们已经使用了一些关于css处理的一些loader，接下来我们通过几个插件更加优化我们的css
+
+### MiniCssExtractPlugin
+此前我们通过css-loader、style-loader等loader最终是将 CSS 注入 DOM中，并没有将css提取到一个单独的文件中。[mini-css-extract-plugin](https://www.npmjs.com/package/mini-css-extract-plugin)这个插件将 CSS 提取到单独的文件中。它为每个包含 CSS 的 JS 文件创建一个 CSS 文件。它支持按需加载 CSS 和 SourceMap
+
+
+```
+yarn add mini-css-extract-plugin -D
+```
+```
+    // src/style.index.css
+html,
+body {
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+}
+
+.caption {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #ddd;
+}
+```
+
+```
+    // src/index.js
+import './style/index.css'    
+```
+MiniCssExtractPlugin需要使用在webpack配置中的两个地方，一个是`plugins`，另一个地方则是在`module.rules`配置选项中使用`MiniCssExtractPlugin.loader`替换掉我们此前的`style-loader`
+```
+    // webpack.config.js
+    
+const {resolve} = require('path')
+const MiniCssExtractPlugin = require('mini-css-extract-plugin')
+const HtmlWebpackPlugin = require('html-webpack-plugin')
+const {CleanWebpackPlugin} = require('clean-webpack-plugin')
+module.exports = {
+  mode: 'production',
+  entry: './src/index.js',
+  output: {
+    filename: 'bundle.js',
+    path: resolve(__dirname, 'build')
+  },
+  module: {
+    rules: [
+      {
+        test: /\.css$/i,
+        use: [
+            // 使用 MiniCssExtractPlugin.loader 替换 style-loader
+          MiniCssExtractPlugin.loader,
+          // ‘style-loader'
+          'css-loader'
+        ]
+      }
+    ]
+  },
+  plugins: [
+      // 使用 MiniCssExtractPlugin 插件
+    new MiniCssExtractPlugin({
+        // 确定每个输出 CSS 文件的名称
+      filename: 'css/[name][contenthash:6].css',
+        // 确定每个输出 CSS 分块文件的名称  
+      chunkFilename: 'css/[id][contenthash:6].css'
+    }),
+    new HtmlWebpackPlugin({
+      template: './src/index.html'
+    }),
+    new CleanWebpackPlugin()
+  ]
+}
+```
+根据以上配置，我们可以发现build打包文件下多了一个css文件夹，css文件夹下的css文件就是我们刚刚通过配置打包抽离的css
+
+其中MiniCssExtractPlugin还有很多配置参数，更多参数可参考[官方网站](https://www.npmjs.com/package/mini-css-extract-plugin)
+
+### PurgeCSS
+[PurgeCSS](https://www.purgecss.cn/) 是一个用来删除未使用的 CSS 代码的工具。可以将它作为你的开发流程中的一个环节。 当你构建一个网站时，你可能会决定使用一个 CSS 框架，例如 TailwindCSS、Bootstrap、MaterializeCSS、Foundation 等，但是，你所用到的也只是框架的一小部分而已，大量 CSS 样式并未被使用，PurgeCSS 通过分析你的内容和 CSS 文件，首先它将 CSS 文件中使用的选择器与内容文件中的选择器进行匹配，然后它会从 CSS 中删除未使用的选择器，从而生成更小的 CSS 文件
+
+PurgeCSS是一款单独的工具，webpack配置中，我们可以通过`purgecss-webpack-plugin`使用PurgeCSS来对我们的项目中的css进行优化
+
+```
+yarn add purgecss-webpack-plugin -D
+```
+
+```
+    // src/style/index.css
+html,
+body {
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+}
+
+.caption {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #ddd;
+}
+.wrapper {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+```
+index.html模版文件中，添加一个caption类样式名的div标签
+```
+    // src/index.html
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Document</title>
+</head>
+<body>
+  <div class="caption">PurgeCSS</div>
+</body>
+</html>
+```
+
+```
+    // src/index.js
+import './style/index.css'
+```
+通过 webpack 插件，你可以通过设置文件名数组来指定由 purgecss 来分析的内容。这些内容可以是 html、pug、blade 等文件。你还可以使用类似 `glob` 或 `glob-all` 的模块来轻松获取文件列表
+
+
+```
+yarn add glob -D
+```
+
+```
+    // webpack.config.js
+const {resolve} = require('path')
+const MiniCssExtractPlugin = require('mini-css-extract-plugin')
+const HtmlWebpackPlugin = require('html-webpack-plugin')
+const {CleanWebpackPlugin} = require('clean-webpack-plugin')
+const PurgecssPlugin = require('purgecss-webpack-plugin')
+const glob = require('glob')
+module.exports = {
+  mode: 'production',
+  entry: './src/index.js',
+  output: {
+    filename: 'bundle.js',
+    path: resolve(__dirname, 'build')
+  },
+  module: {
+    rules: [
+      {
+        test: /\.css$/i,
+        use: [
+          MiniCssExtractPlugin.loader,
+          'css-loader'
+        ]
+      }
+    ]
+  },
+  plugins: [
+    new MiniCssExtractPlugin({
+      filename: 'css/[name][contenthash:6].css',
+      chunkFilename: 'css/[id][contenthash:6].css'
+    }),
+    new PurgecssPlugin({
+        // 匹配需要分析的文件
+      paths: glob.sync(`${__dirname}/**/*`,  {nodir: true})
+    }),
+    new HtmlWebpackPlugin({
+      template: './src/index.html'
+    }),
+    new CleanWebpackPlugin()
+  ]
+}
+```
+打包后对比，可以发现，如果我们没有用到的css，则不会进行打包，因为我们根本没有使用到.wrapper这个类样式名，所以并不会包含进去
+
+![image.png](https://p9-juejin.byteimg.com/tos-cn-i-k3u1fbpfcp/348e3bc68da943f29c88a50742432c16~tplv-k3u1fbpfcp-watermark.image?)
+
+### CssMinimizerPlugin
+这个插件使用[cssnano](https://cssnano.co/)来优化和缩小你的 CSS，对CSS做一个压缩处理
+
+```
+yarn add css-minimizer-webpack-plugin -D
+```
+webpack配置中，在 `optimization.minimizer`进行配置
+```
+    // webpack.config.js
+const {resolve} = require('path')
+const MiniCssExtractPlugin = require('mini-css-extract-plugin')
+const HtmlWebpackPlugin = require('html-webpack-plugin')
+const {CleanWebpackPlugin} = require('clean-webpack-plugin')
+const PurgecssPlugin = require('purgecss-webpack-plugin')
+const glob = require('glob')
+const CssMinimizerPlugin = require('css-minimizer-webpack-plugin')
+module.exports = {
+  mode: 'production',
+  entry: './src/index.js',
+  output: {
+    filename: 'bundle.js',
+    path: resolve(__dirname, 'build')
+  },
+  module: {
+    rules: [
+      {
+        test: /\.css$/i,
+        use: [
+          MiniCssExtractPlugin.loader,
+          'css-loader'
+        ]
+      }
+    ]
+  },
+  optimization: {
+    minimizer: [
+        // 使用 CssMinimizerPlugin 对 css 进行压缩
+      new CssMinimizerPlugin()
+    ]
+  },
+  plugins: [
+    new MiniCssExtractPlugin({
+      filename: 'css/[name][contenthash:6].css',
+      chunkFilename: 'css/[id][contenthash:6].css'
+    }),
+    new PurgecssPlugin({
+      paths: glob.sync(`${__dirname}/**/*`,  {nodir: true})
+    }),
+    new HtmlWebpackPlugin({
+      template: './src/index.html'
+    }),
+    new CleanWebpackPlugin()
+  ]
+}    
+```
