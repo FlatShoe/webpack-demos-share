@@ -1,5 +1,5 @@
-
 ## 概述
+
 `Webpack`是一个用于现代JavaScript应用程序的静态模块打包工具。当Webpack处理应用程序时，它会在内部构建一个依赖图，此依赖图对应映射到项目所需的每个模块，并生成一个或多个bundle
 
 ## 依赖与安装
@@ -21,7 +21,7 @@ yarn add webpack webpack-cli -D #局部安装
 ```
 
 ```
-// index.js
+// src/index.js
 class Person{
   constructor (name, age) {
     this.name = name
@@ -43,6 +43,7 @@ webpack
 根目录下自动生成了一个`dist`目录，dist目录中存放着一个打包后的js文件-`main.js`
 
 ## 默认打包
+
 当我们运行webpack该命令时，Webpack会查找当前目录下的 `src/index.js`作为入口，打包后自动生成`dist/main.js`
 
 同时我们发现main.js文件中的代码已经是压处理过了，因为webpack默认的打包模式是 `production` 模式
@@ -86,8 +87,8 @@ webpack
   "main": "index.js",
   "license": "MIT",
   "devDependencies": {
-    "webpack": "^5.44.0",
-    "webpack-cli": "^4.7.2"
+    "webpack": "^5.14.0",
+    "webpack-cli": "^4.3.1"
   },
   "scripts": {
     "build": "webpack"
@@ -108,8 +109,8 @@ yarn run build
   "main": "index.js",
   "license": "MIT",
   "devDependencies": {
-    "webpack": "^5.44.0",
-    "webpack-cli": "^4.7.2"
+    "webpack": "^5.14.0",
+    "webpack-cli": "^4.3.1"
   },
   "scripts": {
     "build": "webpack --config prod.config.js"
@@ -122,7 +123,7 @@ webpack命令后添加 `--config prod.config.js`，Webpack则会以根目录下�
 创建一个css文件，src/style/common.css，并写入一些样式
 
 ```
-// common.css
+// src/style/common.css
 .container {
    width: 300px;
    height: 300px;
@@ -132,7 +133,7 @@ webpack命令后添加 `--config prod.config.js`，Webpack则会以根目录下�
 入口文件中我们通过EsModule模块导入的方式将css导入进来
 
 ```
-// index.js
+// src/index.js
 import './src/style/common.css'
 ```
 执行 yanr run build 进行打包。控制台报错，因为Webpack只能理解 JavaScript 和 JSON 文件，Webpack不能直接处理 `css`，需要借助 `loader`，控制台中可以看到`You may need an appropriate loader to handle this file type, currently no loaders are configured to process this file`
@@ -181,7 +182,7 @@ module.exports = {
 ```
 执行 yarn run build 进行打包，打包成功，可以新建 build/index.html 通过script标签引入build.js文件,并且编写一个类名为container的标签，打开浏览器查看效果
 
-值得注意的是应保证 loader 的先后顺序：[`'style-loader'`](https://webpack.docschina.org/loaders/style-loader) 在前，而 [`'css-loader'`](https://webpack.docschina.org/loaders/css-loader) 在后。如果不遵守此约定，webpack 可能会抛出错误
+> 值得注意的是应保证 loader 的先后顺序：[`'style-loader'`](https://webpack.docschina.org/loaders/style-loader) 在前，而 [`'css-loader'`](https://webpack.docschina.org/loaders/css-loader) 在后。如果不遵守此约定，webpack 可能会抛出错误
 
 
 ### less-loader
@@ -200,7 +201,7 @@ module.exports = {
 ```
 入口文件中我们通过EsModule模块导入的方式将css导入进来
 ```
-// index.js
+// src/index.js
 import './src/style/common.less'
 ```
 
@@ -214,6 +215,7 @@ yarn add less less-loader -D
 webpack配置文件中进行配置
 
 ```
+   // webpack.config.js
 const {resolve} = require('path')
 module.exports = {
   entry: './src/index.js',
@@ -392,8 +394,8 @@ Browserslist是一个在不同的前端工具之间，共享目标浏览器和No
     "postcss-loader": "^6.1.1",
     "postcss-preset-env": "^6.7.0",
     "style-loader": "^3.2.1",
-    "webpack": "^5.48.0",
-    "webpack-cli": "^4.7.2"
+    "webpack": "^5.14.0",
+    "webpack-cli": "^4.3.1"
   },
   "browserslist": [
     "> 1%",
@@ -1138,7 +1140,7 @@ module.exports = {
   mode: 'development',
     // 设置为source-map
   devtool: 'source-map'
-  ...省略
+  // ...
 }  
 ```
 浏览器会根据这个注释找到source-map文件
@@ -1381,13 +1383,46 @@ useBuiltIns属性
 
 - false: 默认值，不使用polyfill
 
+```
+    // babel.config.js
+module.exports = {
+  presets: [
+    [
+      '@babel/preset-env',
+      {
+        // 设置useBuiltIns 为 usage
+        // useBuiltIns: 'usage',
 
+        // 设置useBuiltIns 为 entry
+        useBuiltIns: 'entry'
+      }
+    ]
+  ]
+}
 ```
- // src/index.js
- 
-```
+
 #### corejs
 [corejs](https://www.npmjs.com/package/core-js): JavaScript 的模块化标准库。包括[ECMAScript 到 2021 年的 polyfills](https://github.com/zloirock/core-js#ecmascript)：[promises](https://github.com/zloirock/core-js#ecmascript-promise)、[symbols](https://github.com/zloirock/core-js#ecmascript-symbol)、[collections](https://github.com/zloirock/core-js#ecmascript-collections)、iterators、[typed arrays](https://github.com/zloirock/core-js#ecmascript-typed-arrays)、许多其他特性、[ECMAScript 提案](https://github.com/zloirock/core-js#ecmascript-proposals)、[一些跨平台的 WHATWG/W3C 特性和提案](https://www.npmjs.com/package/core-js#web-standards)
+
+```
+    // babel.config.js
+module.exports = {
+  presets: [
+    [
+      '@babel/preset-env',
+      {
+        // 设置useBuiltIns 为 usage
+        // useBuiltIns: 'usage',
+
+        // 设置useBuiltIns 为 entry
+        useBuiltIns: 'entry',
+        // 设置corejs 版本
+        corejs: 3.17
+      }
+    ]
+  ]
+}
+```
 
 排除不需要使用polyfill的文件，例如node_modules
 
@@ -1423,6 +1458,8 @@ module.exports = {
 new Promise((resolve,reject) => {})
 ```
 `usage`
+
+将`useBuiltIns` 设置为 `usage`
 ```
  // babel.config.js
 module.exports = {
@@ -1445,8 +1482,9 @@ module.exports = {
 打包后的bundel.js,我粗略数了一下，大概有。。。我也不知道有多少行代码
 
 `entry`
+将`useBuiltIns` 设置为 `entry`
 
-入口文件中引入`core-js/stable` 和 `regenerator-runtime/runtime`
+需要在入口文件中引入`core-js/stable` 和 `regenerator-runtime/runtime`
 
 ```
  // src/index.js
@@ -1939,6 +1977,10 @@ console.log(sum(1, 1))
 
 ![image.png](https://p6-juejin.byteimg.com/tos-cn-i-k3u1fbpfcp/3785930014c84a3ca686721ea3606bb2~tplv-k3u1fbpfcp-watermark.image?)
 
+### 配置执行脚本
+
+此前在[指定配置文件](https://juejin.cn/post/6985782073109774349#heading-7)一章中，介绍到了如何通过`--config`指令配置文件，从而可以根据不同的命令执行不同的文件
+
 package.json中配置执行脚本
 
 `build` -- 项目打包
@@ -2021,6 +2063,7 @@ module.exports = merge(baseConfig, {
 
 ### 入口起点(entry point)
 通过entry入口手动分离
+这是最简单直观的分离代码的方式。不过，这种方式手动配置较多，并有一些隐患
 
 ```
     // webpack.config.js
@@ -2029,6 +2072,7 @@ const {resolve} = require('path')
 
 module.exports = {
   mode: 'production',
+      // 以对象的形式传入，进行手动分离
   entry: {
     index: './src/index.js',
     main: './src/main.js'
@@ -2042,6 +2086,8 @@ module.exports = {
 ```
 
 ### 防止重复
+
+我们在多个模块中，都同时引入了同一个第三方库，这样打包的bundle中造成重复引用
 
 #### [Entry dependencies](https://webpack.docschina.org/configuration/entry-context/#dependencies)
 配置 [`dependOn` option](https://webpack.docschina.org/configuration/entry-context/#dependencies) 选项，这样可以在多个 chunk 之间共享模块
@@ -2518,10 +2564,10 @@ export default {
 `sideEffects` 更为有效 是因为它允许跳过整个模块/文件和整个文件子树
 
 ## 关于处理css的一些插件
-再开头前几章，我们已经使用了一些关于css处理的一些loader，接下来我们通过几个插件更加优化我们的css
+前面我们已经使用了一些关于css处理的一些loader，接下来我们通过几个插件更加优化我们的css
 
 ### MiniCssExtractPlugin
-此前我们通过css-loader、style-loader等loader最终是将 CSS 注入 DOM中，并没有将css提取到一个单独的文件中。[mini-css-extract-plugin](https://www.npmjs.com/package/mini-css-extract-plugin)这个插件将 CSS 提取到单独的文件中。它为每个包含 CSS 的 JS 文件创建一个 CSS 文件。它支持按需加载 CSS 和 SourceMap
+此前我们通过[css-loader、style-loader](https://juejin.cn/post/6985782073109774349#heading-10)等loader最终是将 CSS 注入 DOM中，并没有将css提取到一个单独的文件中。[mini-css-extract-plugin](https://www.npmjs.com/package/mini-css-extract-plugin)这个插件将 CSS 提取到单独的文件中。它为每个包含 CSS 的 JS 文件创建一个 CSS 文件。它支持按需加载 CSS 和 SourceMap
 
 
 ```
@@ -2756,3 +2802,51 @@ module.exports = {
   ]
 }    
 ```
+
+## HTTP压缩
+
+HTTP压缩是指在[Web服务器](https://baike.baidu.com/item/Web%E6%9C%8D%E5%8A%A1%E5%99%A8/8390210)和浏览器间传输压缩文本内容的方法。HTTP压缩通常采用[gzip](https://baike.baidu.com/item/gzip/4487553)压缩算法压缩HTML、JavaScript、CSS等文件。压缩的最大好处就是降低了网络传输的数据量，从而提高客户端浏览器的访问速度。当然，同时也会增加一点服务器的负担。
+
+### HTTP压缩过程
+1. 浏览器发送Http request 给Web服务器,  request 中有Accept-Encoding: gzip, deflate。 (告诉服务器， 浏览器支持gzip压缩)
+2. Web服务器接到request后， 生成原始的Response, 其中有原始的Content-Type和Content-Length
+3. Web服务器通过Gzip，来对Response进行编码， 编码后header中有Content-Type和Content-Length(压缩后的大小)， 并且增加了Content-Encoding:gzip.  然后把Response发送给浏览器
+4. 浏览器接到Response后，根据Content-Encoding:gzip来对Response 进行解码。 获取到原始response后， 然后显示出网页
+
+### 关于HTTP压缩，webpack能做什么
+服务器对文件进行压缩是需要消耗一定资源的，其实在打包的时候，webpack便可以将文件进行压缩，生成相应的压缩文件。如果服务器开启了gzip压缩，服务器便不需要进行压缩，只需要返回我们打包好的对应的压缩文件就行了，这样也可以对服务器减轻一点负担
+
+### CompressionPlugin
+
+CompressionPlugin该插件便可以完成这种压缩操作
+
+```
+yarn compression-webpack-plugin -D
+```
+
+```
+    // src/index.js
+import _ from 'lodash'
+console.log(_.add(6, 4))
+```
+
+```
+    // webpack.config.js
+const {resolve} = require('path')
+const CompressionPlugin = require('compression-webpack-plugin')
+module.exports = {
+  mode: 'production',
+  entry: './src/index.js',
+  output: {
+    filename: '[name].js',
+    path: resolve(__dirname, 'build')
+  },
+  plugins: [
+    new CompressionPlugin({
+        // 匹配需要压缩的文件
+      test: /\.(css|js)$/
+    })
+  ]
+}
+```
+关于`CompressionPlugin`还有很多配置选项，可以查阅[官网](https://www.npmjs.com/package/compression-webpack-plugin)
